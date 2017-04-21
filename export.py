@@ -3,101 +3,44 @@ import sys
 
 import teparser
 
+
+# ---------------------------------------------------------------------------------------------------
 def main():
-
-    print ("This is main from export.py")
+    # list of files for export
+    # must be gained from google drive
+    ResourceList = ["TextEncounters1"]
     
-    # exportTextEncountersResources(projectName, ProjectPath, ParamsPath, "Locale_RU", "Resources", "Scripts/TextEncounter", "PathTextEncounter.xlsx")
+    ExportPath = 'd:/Programs/Jenkins/workspace/PythonExec/'
+    ResourcePath = 'd:/Programs/Jenkins/workspace/PythonExec/Resources'
 
-    exportTextEncountersResources()
-
+    export(ExportPath, ResourcePath, ResourceList)
     pass
 
 # ----------------------------------------- Text Encounters -----------------------------------------
-# def exportTextEncountersResources(projectName, ProjectPath, ParamsPath, LocaleDir, ResourceDir, DataDir, DataFile):
-def exportTextEncountersResources():
-    """
-    :param projectName:
-    :param ProjectPath:
-    :param ParamsPath:
-    :param LocaleDir (ex. "Locale_RU"):
-    :param ResourceDir (ex. "Resources"):
-    :param DataDir (ex. "Scripts/TextEncounter"):
-    :param DataFile (ex. "PathTextEncounter.xlsx"):
-    """
-
-    ProjectPath = 'd:/Programs/Jenkins/workspace/PythonExec/'
-    ParamsPath = ProjectPath
-    LocaleDir = "Locale/"
-    ResourceDir = ""
-    DataDir = ""
-    DataFile = ""
-
-    # list of docx file for export
-    resourceList = ["TextEncounters1"]
-
-    # create export directory
-    ExportPath = 'd:/Programs/Jenkins/workspace/PythonExec/'
-
-    ExportDirectory = os.path.join(ExportPath, "Module/")
-    if not os.path.exists(ExportDirectory):
-        os.makedirs(ExportDirectory)
-        pass
-
-    # create export TextEncounter script path
-    scriptPath = os.path.join(ExportDirectory, "TextEncounter/")
-
-    directory = os.path.dirname(scriptPath)
+def create_dir(path, *args):
+    directory = os.path.join(path, *args)
     if not os.path.exists(directory):
         os.makedirs(directory)
         pass
+    pass
 
-    # create textx resources export directory
-    texts_filename = os.path.join(ExportDirectory, LocaleDir, "TextEncounterTexts.xml")
+def write_script(TypeName, ScriptDir, ScriptText):
+    ScriptFileName = "%s.py"%(TypeName)
+    ScriptFilePath = os.path.join(ScriptDir, ScriptFileName)
 
-    directory = os.path.dirname(texts_filename)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        pass
+    with open(ScriptFilePath, "w") as f:
+        f.write(ScriptText)
+    pass
 
-    # export logic
-    all_texts = []
-    reg_info = []
+def write_texts(AllTexts, TextFileName):
+    texts = teparser.format_texts(AllTexts)
 
-    for row in resourceList:
-        if not row:
-            continue
-
-        docx_path = row
-
-        docxFileName = "%s%s.docx"%(ParamsPath, docx_path)
-
-        print (" EXPORT TE DOCX='{}'".format(docxFileName))
-        scripts, texts = teparser.process(docxFileName)
-
-        for (te_id, script_text) in scripts:
-            print (" EXPORT TE ID={}".format(te_id))
-
-            type_name = "TextEncounter{}".format(te_id)
-            generateFilename = os.path.join(scriptPath, type_name + ".py")
-
-            with open(generateFilename, "w") as f:
-                f.write(script_text)
-
-            reg_info.append((te_id, type_name))
-            pass
-
-        all_texts += texts
-        pass
-
-    # write text resources
-    texts = teparser.format_texts(all_texts)
-
-    with open(texts_filename, "w") as f:
+    with open(TextFileName, "w") as f:
         f.write(texts)
+    pass
 
-    # test for register in __init__.py
-    with open(scriptPath + "__init__.py", "w") as init_file:
+def write_init(ScriptDir, reg_info):
+    with open(ScriptDir + "__init__.py", "w") as init_file:
         init_file.write("from Game.TextEncounters.TextEncounterManager import TextEncounterManager\n\n\n")
         reg_format = "TextEncounterManager.addTextEncounter(\"{ID}\", \"{Module}\", \"{TypeName}\")\n"
         for (te_id, type_name) in reg_info:
@@ -107,6 +50,56 @@ def exportTextEncountersResources():
         pass
     pass
 
+def export(ExportPath, ResourcePath, ResourceList):
+
+    ExportDir = os.path.join(ExportPath, "Package/")
+    ScriptDir = os.path.join(ExportDir, "TextEncounter/")
+    TextDir = os.path.join(ExportDir, "Locale/")
+
+    TextFileName = os.path.join(TextDir, "TextEncounterTexts.xml")
+
+    create_dir(ExportDir)
+    create_dir(ScriptDir)
+    create_dir(TextDir)
+
+    # export logic
+    all_texts = []
+    reg_info = []
+
+    for ResourceName in ResourceList:
+        if not ResourceName:
+            continue
+
+        ResourceFileName = "%s.docx"%(ResourceName)
+        ResourceFilePath = os.path.join(ResourcePath, ResourceFileName)
+
+        # debug log
+        print (" EXPORT TE DOCX='{}'".format(ResourceFilePath))
+
+        scripts, texts = teparser.process(ResourceFilePath)
+        for (te_id, script_text) in scripts:
+            # debug log
+            print (" EXPORT TE ID={}".format(te_id))
+
+            type_name = "TextEncounter{}".format(te_id)
+
+            write_script(type_name, ScriptDir, script_text)
+
+            reg_info.append((te_id, type_name))
+            pass
+
+        all_texts += texts
+        pass
+
+    # write text resources
+    write_texts(all_texts, TextFileName)
+
+    # test for register in __init__.py
+    write_init(ScriptDir, reg_info)
+    pass
+
+# ---------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     main()
     pass
+# ---------------------------------------------------------------------------------------------------
