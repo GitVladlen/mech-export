@@ -8,23 +8,23 @@ import teparser
 def main():
     """
     ---------------------------------
-    Structure:
+    Result Structure:
     ---------------------------------
     + MechLocale/
-    -- Pak.xml
-    -- TextEncounterTexts.xml
-    -- QuestTexts.xml
+     - Pak.xml
+     - TextEncounterTexts.xml
+     - QuestTexts.xml
     + MechResources/
-    -- Pak.xml
-    -+ Scripts/
-    --+ TextEncounter/
-    ---- __init__.py
-    ---- TextEncounter<ID>.py
-    ---- ...
-    --+ Quests/
-    ---- __init__.py
-    ---- Quest<ID>.py
-    ---- ...
+     - Pak.xml
+     + Scripts/
+      + TextEncounter/
+       - __init__.py
+       - TextEncounter<ID>.py
+       - ...
+      + Quests/
+       - __init__.py
+       - Quest<ID>.py
+       - ...
     ---------------------------------
     
     1. create dirs
@@ -35,25 +35,29 @@ def main():
 
     # list of files for export
     # must be gained from google drive
-    ResourceList = ["TextEncounters1"]
+    TE_ResourceList = ["TextEncounters1"]
+    Quest_ResourceList = ["Quests1"]
 
-    PackageName = "MechResources"
+    PackageName = "ExternalResources"
+    LocalePakcageName = "ExternalLocale"
     
     ExportPath = 'd:/Programs/Jenkins/workspace/PythonExec/'
     ResourcePath = 'd:/Programs/Jenkins/workspace/PythonExec/Resources'
 
-    export(ExportPath, PackageName, ResourcePath, ResourceList)
+    export(ExportPath, PackageName, LocalePakcageName, ResourcePath, TE_ResourceList, "TextEncounter", teparser.process, write_text_encounter_init)
+    export(ExportPath, PackageName, LocalePakcageName, ResourcePath, Quest_ResourceList, "Quest", teparser.process_quest_source, write_text_encounter_init)
 
     # write Pak.xml
     PakScriptsList = [
-        dict(Path = "TextEncounter/", Module="TextEncounter"),
+        dict(Path = "Scripts/TextEncounter/", Module="TextEncounter"),
         dict(Path = "Quests/", Module="Quests"),
     ]
     PakTextsList = [
         dict(Path = "TextEncounterTexts.xml"),
         dict(Path = "QuestTexts.xml"),
     ]
-    write_pak(ExportPath, PackageName, PakScriptsList, PakTextsList)
+    write_scripts_pak(ExportPath, PackageName, PakScriptsList)
+    write_texts_pak(ExportPath, LocalePakcageName, PakTextsList)
     pass
 
 # ----------------------------------------- Utils -----------------------------------------
@@ -79,7 +83,7 @@ def write_texts(AllTexts, TextFileName):
         f.write(texts)
     pass
 
-def write_init(ScriptDir, reg_info):
+def write_text_encounter_init(ScriptDir, reg_info):
     with open(ScriptDir + "__init__.py", "w") as init_file:
         init_file.write("from Game.TextEncounters.TextEncounterManager import TextEncounterManager\n\n\n")
         reg_format = "TextEncounterManager.addTextEncounter(\"{ID}\", \"{Module}\", \"{TypeName}\")\n"
@@ -90,30 +94,57 @@ def write_init(ScriptDir, reg_info):
         pass
     pass
 
-def write_pak(ExportPath, PackageName, ScriptsDesc, TextsDesc):
+def write_quest_init(ScriptDir, reg_info):
+    with open(ScriptDir + "__init__.py", "w") as init_file:
+        init_file.write("from Game.Quests.QuestManager import QuestManager\n\n\n")
+        reg_format = "QuestManager.addQuest(\"{ID}\", \"{Module}\", \"{TypeName}\")\n"
+        for (te_id, type_name) in reg_info:
+            reg_line = reg_format.format(ID=te_id, Module="Quest", TypeName=type_name)
+            init_file.write(reg_line)
+            pass
+        pass
+    pass
+
+def write_scripts_pak(ExportPath, PackageName, ScriptsDesc):
     pak_format_string = """
 <Pak>
+    <Scripts Path = "Scripts/" />
 {Scripts}
-    <Texts>
-{Texts}
-    </Texts>
 </Pak>"""
     script_format_string = "    <Scripts Path = \"{Path}\" Module = \"{Module}\"/>"
-    text_format_string = "        <Text Path = \"{Path}\"/>"
 
     scripts_lines = []
     for script_desc in ScriptsDesc:
         scripts_lines.append(script_format_string.format(**script_desc))
         pass
 
+
+    ScriptsParam = "\n".join(scripts_lines)
+
+    PakText = pak_format_string.format(Scripts=ScriptsParam)
+
+    PakFilePath = os.path.join(ExportPath, PackageName + "/Pak.xml")
+    with open(PakFilePath, "w") as f:
+        f.write(PakText)
+        pass
+    pass
+
+def write_texts_pak(ExportPath, PackageName, TextsDesc):
+    pak_format_string = """
+<Pak>
+    <Texts>
+{Texts}
+    </Texts>
+</Pak>"""
+    text_format_string = "        <Text Path = \"{Path}\"/>"
+
     texts_lines = []
     for text_desc in TextsDesc:
         texts_lines.append(text_format_string.format(**text_desc))
 
-    ScriptsParam = "\n".join(scripts_lines)
     TextsParam = "\n".join(texts_lines)
 
-    PakText = pak_format_string.format(Scripts=ScriptsParam, Texts=TextsParam)
+    PakText = pak_format_string.format(Texts=TextsParam)
 
     PakFilePath = os.path.join(ExportPath, PackageName + "/Pak.xml")
     with open(PakFilePath, "w") as f:
@@ -122,13 +153,13 @@ def write_pak(ExportPath, PackageName, ScriptsDesc, TextsDesc):
     pass
 
 # ----------------------------------------- Text Encounters -----------------------------------------
-def export(ExportPath, PackageName, ResourcePath, ResourceList):
+def export(ExportPath, PackageName, LocalePakcageName, ResourcePath, ResourceList, TypeName, ProcessFn, WriteInitFn):
 
     ExportDir = os.path.join(ExportPath, PackageName + "/")
-    ScriptDir = os.path.join(ExportDir, "TextEncounter/")
-    TextDir = os.path.join(ExportDir, "Locale/")
+    ScriptDir = os.path.join(ExportDir, "Scripts/" + TypeName +"/")
+    TextDir = os.path.join(ExportPath, LocalePakcageName + "/")
 
-    TextFileName = os.path.join(TextDir, "TextEncounterTexts.xml")
+    TextFileName = os.path.join(TextDir, TypeName + "Texts.xml")
 
     create_dir(ExportDir)
     create_dir(ScriptDir)
@@ -146,14 +177,15 @@ def export(ExportPath, PackageName, ResourcePath, ResourceList):
         ResourceFilePath = os.path.join(ResourcePath, ResourceFileName)
 
         # debug log
-        print (" EXPORT TE DOCX='{}'".format(ResourceFilePath))
+        print (" EXPORT DOCX='{}'".format(ResourceFilePath))
 
-        scripts, texts = teparser.process(ResourceFilePath)
+        # scripts, texts = teparser.process(ResourceFilePath)
+        scripts, texts = ProcessFn(ResourceFilePath)
         for (te_id, script_text) in scripts:
             # debug log
-            print (" EXPORT TE ID={}".format(te_id))
+            print (" EXPORT ID={}".format(te_id))
 
-            type_name = "TextEncounter{}".format(te_id)
+            type_name = TypeName + te_id
 
             write_script(type_name, ScriptDir, script_text)
 
@@ -167,7 +199,7 @@ def export(ExportPath, PackageName, ResourcePath, ResourceList):
     write_texts(all_texts, TextFileName)
 
     # test for register in __init__.py
-    write_init(ScriptDir, reg_info)
+    WriteInitFn(ScriptDir, reg_info)
     pass
 
 # ---------------------------------------------------------------------------------------------------
