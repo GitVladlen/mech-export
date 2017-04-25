@@ -6,17 +6,57 @@ import teparser
 
 # ---------------------------------------------------------------------------------------------------
 def main():
+    """
+    ---------------------------------
+    Structure:
+    ---------------------------------
+    + MechLocale/
+    -- Pak.xml
+    -- TextEncounterTexts.xml
+    -- QuestTexts.xml
+    + MechResources/
+    -- Pak.xml
+    -+ Scripts/
+    --+ TextEncounter/
+    ---- __init__.py
+    ---- TextEncounter<ID>.py
+    ---- ...
+    --+ Quests/
+    ---- __init__.py
+    ---- Quest<ID>.py
+    ---- ...
+    ---------------------------------
+    
+    1. create dirs
+    2. parse
+    3. write files
+    4. write Paks
+    """
+
     # list of files for export
     # must be gained from google drive
     ResourceList = ["TextEncounters1"]
+
+    PackageName = "MechResources"
     
     ExportPath = 'd:/Programs/Jenkins/workspace/PythonExec/'
     ResourcePath = 'd:/Programs/Jenkins/workspace/PythonExec/Resources'
 
-    export(ExportPath, ResourcePath, ResourceList)
+    export(ExportPath, PackageName, ResourcePath, ResourceList)
+
+    # write Pak.xml
+    PakScriptsList = [
+        dict(Path = "TextEncounter/", Module="TextEncounter"),
+        dict(Path = "Quests/", Module="Quests"),
+    ]
+    PakTextsList = [
+        dict(Path = "TextEncounterTexts.xml"),
+        dict(Path = "QuestTexts.xml"),
+    ]
+    write_pak(ExportPath, PackageName, PakScriptsList, PakTextsList)
     pass
 
-# ----------------------------------------- Text Encounters -----------------------------------------
+# ----------------------------------------- Utils -----------------------------------------
 def create_dir(path, *args):
     directory = os.path.join(path, *args)
     if not os.path.exists(directory):
@@ -50,9 +90,41 @@ def write_init(ScriptDir, reg_info):
         pass
     pass
 
-def export(ExportPath, ResourcePath, ResourceList):
+def write_pak(ExportPath, PackageName, ScriptsDesc, TextsDesc):
+    pak_format_string = """
+<Pak>
+{Scripts}
+    <Texts>
+{Texts}
+    </Texts>
+</Pak>"""
+    script_format_string = "    <Scripts Path = \"{Path}\" Module = \"{Module}\"/>"
+    text_format_string = "        <Text Path = \"{Path}\"/>"
 
-    ExportDir = os.path.join(ExportPath, "Package/")
+    scripts_lines = []
+    for script_desc in ScriptsDesc:
+        scripts_lines.append(script_format_string.format(**script_desc))
+        pass
+
+    texts_lines = []
+    for text_desc in TextsDesc:
+        texts_lines.append(text_format_string.format(**text_desc))
+
+    ScriptsParam = "\n".join(scripts_lines)
+    TextsParam = "\n".join(texts_lines)
+
+    PakText = pak_format_string.format(Scripts=ScriptsParam, Texts=TextsParam)
+
+    PakFilePath = os.path.join(ExportPath, PackageName + "/Pak.xml")
+    with open(PakFilePath, "w") as f:
+        f.write(PakText)
+        pass
+    pass
+
+# ----------------------------------------- Text Encounters -----------------------------------------
+def export(ExportPath, PackageName, ResourcePath, ResourceList):
+
+    ExportDir = os.path.join(ExportPath, PackageName + "/")
     ScriptDir = os.path.join(ExportDir, "TextEncounter/")
     TextDir = os.path.join(ExportDir, "Locale/")
 
