@@ -45,12 +45,12 @@ def main():
     ResourcePath = 'd:/Programs/Jenkins/workspace/PythonExec/Resources'
 
     export(ExportPath, PackageName, LocalePakcageName, ResourcePath, TE_ResourceList, "TextEncounter", teparser.process, write_text_encounter_init)
-    export(ExportPath, PackageName, LocalePakcageName, ResourcePath, Quest_ResourceList, "Quest", teparser.process_quest_source, write_text_encounter_init)
+    export(ExportPath, PackageName, LocalePakcageName, ResourcePath, Quest_ResourceList, "Quest", teparser.process_quest_source, write_quest_init)
 
     # write Pak.xml
     PakScriptsList = [
         dict(Path = "Scripts/TextEncounter/", Module="TextEncounter"),
-        dict(Path = "Quests/", Module="Quests"),
+        dict(Path = "Scripts/Quest/", Module="Quest"),
     ]
     PakTextsList = [
         dict(Path = "TextEncounterTexts.xml"),
@@ -86,6 +86,8 @@ def write_texts(AllTexts, TextFileName):
 def write_text_encounter_init(ScriptDir, reg_info):
     with open(ScriptDir + "__init__.py", "w") as init_file:
         init_file.write("from Game.TextEncounters.TextEncounterManager import TextEncounterManager\n\n\n")
+        # debug
+        init_file.write("print (\"========= EXTERNAL INIT TEXT ENCOUNTERS ============\")\n")
         reg_format = "TextEncounterManager.addTextEncounter(\"{ID}\", \"{Module}\", \"{TypeName}\")\n"
         for (te_id, type_name) in reg_info:
             reg_line = reg_format.format(ID=te_id, Module="TextEncounter", TypeName=type_name)
@@ -97,6 +99,8 @@ def write_text_encounter_init(ScriptDir, reg_info):
 def write_quest_init(ScriptDir, reg_info):
     with open(ScriptDir + "__init__.py", "w") as init_file:
         init_file.write("from Game.Quests.QuestManager import QuestManager\n\n\n")
+        # debug
+        init_file.write("print (\"========= EXTERNAL INIT QUESTS ============\")\n")
         reg_format = "QuestManager.addQuest(\"{ID}\", \"{Module}\", \"{TypeName}\")\n"
         for (te_id, type_name) in reg_info:
             reg_line = reg_format.format(ID=te_id, Module="Quest", TypeName=type_name)
