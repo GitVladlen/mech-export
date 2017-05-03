@@ -2,6 +2,7 @@ import os
 import sys
 
 import teparser
+import settings
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -32,22 +33,26 @@ def main():
     3. write files
     4. write Paks
     """
-
+    # - Source Lists ------------------------------------------
     # list of files for export
     # must be gained from google drive
     TE_ResourceList = ["TextEncounters1"]
     Quest_ResourceList = ["Quests1"]
 
-    PackageName = "ExternalResources"
-    LocalePakcageName = "ExternalLocale"
+    # - Settings ----------------------------------------------
+    PackageName = settings.SCRIPT_PAKCAGE_NAME
+    LocalePakcageName = settings.LOCALE_PACKAGE_NAME
     
-    ExportPath = 'd:/Programs/Jenkins/workspace/PythonExec/'
-    ResourcePath = 'd:/Programs/Jenkins/workspace/PythonExec/Resources'
+    ExportPath = settings.EXPORT_PATH
 
-    export(ExportPath, PackageName, LocalePakcageName, ResourcePath, TE_ResourceList, "TextEncounter", teparser.process, write_text_encounter_init)
-    export(ExportPath, PackageName, LocalePakcageName, ResourcePath, Quest_ResourceList, "Quest", teparser.process_quest_source, write_quest_init)
-
-    # write Pak.xml
+    ResourcePath_TE = settings.TEXT_ENCOUNTER_SOURCES_PATH
+    ResourcePath_Q = settings.QUESTS_SOURCES_PATH
+    # - Export ------------------------------------------------
+    # text encounters
+    export(ExportPath, PackageName, LocalePakcageName, ResourcePath_TE, TE_ResourceList, "TextEncounter", teparser.process, write_text_encounter_init)
+    # quests
+    export(ExportPath, PackageName, LocalePakcageName, ResourcePath_Q, Quest_ResourceList, "Quest", teparser.process_quest_source, write_quest_init)
+    # - Write Pak.xml -----------------------------------------
     PakScriptsList = [
         dict(Path = "Scripts/TextEncounter/", Module="TextEncounter"),
         dict(Path = "Scripts/Quest/", Module="Quest"),

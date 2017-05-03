@@ -1,5 +1,0 @@
-
-<Pak>
-    <Scripts Path = "Scripts/" />
-    <Scripts Path = "Scripts/TextEncounter/" Module = "TextEncounter"/>
-</Pak>
