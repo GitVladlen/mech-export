@@ -3,10 +3,13 @@ RUN_MODE_PROJECT_DIR = 2
 RUN_MODE_LOCAL = 3
 RUN_MODE_FROM_PROJECT_LOCAL = 4
 
-RUN_MODE = RUN_MODE_FROM_PROJECT_LOCAL
+RUN_MODE = RUN_MODE_LOCAL
 
 SCRIPT_PAKCAGE_NAME = "ExternalResources"
 LOCALE_PACKAGE_NAME = "ExternalLocale"
+
+METAWRITE_EXE_PATH = ".\Metawrite\Metawrite.exe"
+METAWRITE_PROTOCOL_PATH = ".\Metawrite\protocol.xml"
 
 # - main run mode ----------------------------------------------------
 if RUN_MODE == RUN_MODE_JENKINS:
